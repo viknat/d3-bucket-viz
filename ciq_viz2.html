@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<body>
+<style>
+
+svg {
+  font: 10px sans-serif;
+}
+
+path {
+  fill: white;
+  stroke: white;
+  stroke-width: 3px;
+}
+
+circle {
+  fill: red;
+  stroke: #fff;
+  stroke-width: 1px;
+}
+
+.axis {
+  shape-rendering: crispEdges;
+}
+
+.x.axis line {
+  stroke: #fff;
+}
+
+.x.axis .minor {
+  stroke-opacity: .5;
+}
+
+.x.axis path {
+  display: none;
+}
+
+.y.axis line,
+.y.axis path {
+  fill: none;
+  stroke: #000;
+}
+
+</style>
+<script src="//d3js.org/d3.v3.min.js"></script>
+<script>
+
+var margin = {top: 40, right: 40, bottom: 40, left: 40},
+    width = 960 - margin.left - margin.right,
+    height = 500 - margin.top - margin.bottom;
+
+d3.select("body")
+    .style("color", "black")
+    .style("background-color", "black");
+
+var x = d3.scale.linear()
+  .range([0, width]);
+
+var y = d3.scale.linear()
+  .range([height, 0]);
+
+d3.csv("bucket_stats.csv", function(error, data) {
+    data.forEach(function(d) {
+        d.BUCKET_SIZE = +d.BUCKET_SIZE;
+        d.BUCKET_WIN_RATE = +d.BUCKET_WIN_RATE;
+    });
+    x.domain([0, 100]);
+    y.domain([d3.min(data, function(d) { return d.BUCKET_WIN_RATE; }),
+              d3.max(data, function(d) { return d.BUCKET_WIN_RATE; })])
+
+var totalCount = data[5]['BUCKET_SIZE']
+var BaselineWinRate = data[5]['BUCKET_WIN_RATE']
+
+var xAxis = d3.svg.axis()
+  .scale(x);
+
+var yAxis = d3.svg.axis()
+  .scale(y)
+  .orient("right");
+
+var svg = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+    .style("border", "1px solid white");
+
+svg.append("g")
+    .attr("class", "x axis")
+    .attr("transform", "translate(0," + height + ")")
+    .call(xAxis);
+
+svg.append("g")
+    .attr("class", "y axis")
+    .attr("transform", "translate(" + width + ",0)")
+    .call(yAxis);
+
+var points = [{"x": 0, "y": BaselineWinRate},
+{"x": 50, "y": BaselineWinRate}
+]
+
+var path = svg.append("path")//.attr("d","M 0 " + BaselineWinRate+1 + " l 300 0")
+   .attr("d","M 0 " + y(BaselineWinRate) + " l 300 0")
+   .attr("fill","none")
+   .attr("stroke","black")
+
+// var lineFunction = d3.svg.line()
+//                         .x(function(d) { return d.x; })
+//                         .y(function(d) { return d.y; })
+//                         .interpolate("linear");
+
+// var path = svg.append("path")
+//               .attr("d", lineFunction(points))
+// console.log(path)
+
+var dot  = svg.append("circle")
+    .attr("r", 13)
+    .attr("color", "red")
+
+var dur = 2000;
+dot.transition()
+.duration(dur)
+.ease("linear")
+.attrTween("transform", translateAlong(path.node()))
+
+var rectangle = svg.append("rect")
+                    .attr("fill", "white")
+                    .attr("x", x(10))
+                    .attr("y", y(10))
+                    .attr("width", x(50))
+                    .attr("height", y(0.13));
+
+function translateAlong(path) {
+  var l = path.getTotalLength();
+  return function(i) {
+    return function(t) {
+      var p = path.getPointAtLength(t * l);
+      return "translate(" + p.x + "," + p.y + ")";//Move marker
+    }
+  }
+ }
+ });
+</script>
